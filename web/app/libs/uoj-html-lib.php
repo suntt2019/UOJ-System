@@ -206,19 +206,21 @@ function getSubmissionStatusDetails($submission) {
 function echoSubmission($submission, $config, $user) {
 	$problem = queryProblemBrief($submission['problem_id']);
 	$submitterLink = getUserLink($submission['submitter']);
-	
-	if ($submission['score'] == null) {
+	$contest = queryContest($submission['contest_id']);
+	genMoreContestInfo($contest);
+
+	if ($submission['score'] == null || ($contest['extra_config']['contest_type']=='ACM' && $contest['cur_progress'] == CONTEST_IN_PROGRESS && !hasContestPermission($user, $contest))) {
 		$used_time_str = "/";
 		$used_memory_str = "/";
 	} else {
 		$used_time_str = $submission['used_time'] . 'ms';
 		$used_memory_str = $submission['used_memory'] . 'kb';
 	}
-	
+
 	$status = explode(', ', $submission['status'])[0];
 	
 	$show_status_details = Auth::check() && $submission['submitter'] === Auth::id() && $status !== 'Judged';
-	
+
 	if (!$show_status_details) {
 		echo '<tr>';
 	} else {
@@ -490,8 +492,11 @@ class JudgementDetailsPrinter {
 				echo '<div class="text-right text-muted">', '小提示：点击横条可展开更详细的信息', '</div>';
 			} elseif ($this->styler->ioi_contest_is_running) {
 				echo '<div class="text-right text-muted">', 'IOI赛制比赛中不支持显示详细信息', '</div>';
+			} elseif ($this->styler->acm_contest_is_running) {
+				echo '<div class="text-right text-muted">', 'ACM赛制比赛中仅可见第一个不是Accepted测试点结果（见上方题目结果）', '</div>';
 			}
-			$this->_print_c($node);
+			if(!$this->styler->acm_contest_is_running)
+				$this->_print_c($node);
 			echo '</div>';
 		} elseif ($node->nodeName == 'subtask') {
 			$subtask_num = $node->getAttribute('num');
@@ -736,6 +741,7 @@ class CustomTestSubmissionDetailsStyler {
 	public $collapse_in = true;
 	public $fade_all_details = false;
 	public $ioi_contest_is_running = false;
+	public $acm_contest_is_running = false;
 	public function getTestInfoClass($info) {
 		if ($info == 'Success') {
 			return 'card-uoj-accepted';

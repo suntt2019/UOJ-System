@@ -123,6 +123,10 @@
 				$styler->ioi_contest_is_running = true;
 			}
 		}
+		if ($contest['extra_config']['contest_type']=='ACM' && $contest['cur_progress'] == CONTEST_IN_PROGRESS) {
+			$styler->show_small_tip = false;
+			$styler->acm_contest_is_running = true;
+		}
 	}
 ?>
 <?php 

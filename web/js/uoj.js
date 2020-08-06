@@ -121,7 +121,17 @@ function getColOfRating(rating) {
 	return ColorConverter.toStr(ColorConverter.toRGB(new HSV(300 - (rating - 850) * 300 / 1650, 30 + (rating - 850) * 70 / 1650, 50 + (rating - 850) * 50 / 1650)));
 }
 function getColOfScore(score) {
-	if (score == 0) {
+	if (score == -2) {
+		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 80)));//card-uoj-accepted
+	} else if (score == -3) {
+		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(60, 100, 80)));//card-uoj-tle
+	} else if (score == -4) {
+		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(28, 100, 80)));//card-uoj-acceptable-answer
+	} else if (score <= -5 && score >= -11) {
+		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(0, 100, 80)));//card-uoj-wrong
+	} else if (score < -11) {
+		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(300, 100, 80)));
+	} else if (score == 0) {
 		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(0, 100, 80)));
 	} else if (score == 100) {
 		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 80)));
@@ -429,7 +439,10 @@ $.fn.uoj_highlight = function() {
 			if (isNaN(score)) {
 				return;
 			}
-			if (isNaN(maxscore)) {
+			if (score<0) {
+				$(this).text(getScoreString(score))
+				$(this).css("color", getColOfScore(score));
+			} else if (isNaN(maxscore)) {
 				$(this).css("color", getColOfScore(score));
 			} else {
 				$(this).css("color", getColOfScore(score / maxscore * 100));
@@ -1127,7 +1140,7 @@ function showStandings() {
 				col_tr += '<td>';
 				col = score[row[2][0]][i];
 				if (col != undefined) {
-					col_tr += '<div><a href="/submission/' + col[2] + '" class="uoj-score" style="color:' + getColOfScore(col[0]) + '">' + col[0] + '</a></div>';
+					col_tr += '<div><a href="/submission/' + col[2] + '" class="uoj-score" style="color:' + getColOfScore(col[0]) + '">' + getScoreString(col[0]) + '</a></div>';
 					if (standings_version < 2) {
 						col_tr += '<div>' + getPenaltyTimeStr(col[1]) + '</div>';
 					} else {
@@ -1148,4 +1161,29 @@ function showStandings() {
 			}
 		}
 	);
+}
+
+
+function getScoreString(score){
+	if(score>=0)
+		return score;
+	if(score<-11)
+		return "SCORE_CODE_TOO_SMALL"
+	let statusNames = [
+		"STATUS_CODE_0",
+		"FAIL_TO_SHOW_STATUS",//-1
+		"Accepted",
+		"Time Limit Exceeded",
+		"Acceptable Answer",
+		"Wrong Answer",//-5
+		"Runtime Error",
+		"Memory Limit Exceeded",
+		"Output Limit Exceeded",
+		"Dangerous Syscalls",
+		"Judgement Failed",//-10
+		"No Comment",
+		"UNKNOWN_NAME",
+	];
+	let statusCode = - score;
+	return statusNames[statusCode];
 }

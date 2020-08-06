@@ -7,7 +7,7 @@
 	}
 	
 	function submissionJudged() {
-		$submission = DB::selectFirst("select submitter, status, content, result, problem_id from submissions where id = {$_POST['id']}");
+		$submission = DB::selectFirst("select submitter, status, content, result, problem_id, contest_id from submissions where id = {$_POST['id']}");
 		if ($submission == null) {
 			return;
 		}
@@ -15,10 +15,13 @@
 			return;
 		}
 		$content = json_decode($submission['content'], true);
-		
+		$contest = queryContest($submission['contest_id']);
+		genMoreContestInfo($contest);
+
 		if (isset($content['first_test_config'])) {
 			$result = json_decode($submission['result'], true);
 			$result['final_result'] = json_decode($_POST['result'], true);
+			$result['final_result']['score'] = getACMSubmissionResult($result['final_result']);
 			$result['final_result']['details'] = uojTextEncode($result['final_result']['details']);
 			$esc_result = DB::escape(json_encode($result, JSON_UNESCAPED_UNICODE));
 			
@@ -31,6 +34,9 @@
 		} else {
 			$result = json_decode($_POST['result'], true);
 			$result['details'] = uojTextEncode($result['details']);
+			if($contest['extra_config']['contest_type']=='ACM' && $contest['cur_progress'] == CONTEST_IN_PROGRESS) {
+				$result['score'] = getACMSubmissionResult($result);
+			}
 			$esc_result = DB::escape(json_encode($result, JSON_UNESCAPED_UNICODE));
 			if (isset($result["error"])) {
 				DB::update("update submissions set status = '{$result['status']}', result_error = '{$result['error']}', result = '$esc_result', score = null, used_time = null, used_memory = null where id = {$_POST['id']}");
@@ -186,7 +192,49 @@
 		}
 		return false;
 	}
-	
+
+	function getACMSubmissionResult($result){
+		if (isset($result["error"]))
+			return null;
+		if ($result['score'] == 100)
+			return -2;//Accepted
+		$dom = new DOMDocument();
+		if (!$dom->loadXML($result['details'])) {
+			return -1;//FAIL_TO_SHOW_STATUS
+		}
+		$tests = $dom->documentElement;
+		$status = "ERROR_NOT_FOUND_NOT_AC_TEST";
+		foreach ($tests->childNodes as $test) {
+			if ($test->nodeName!="test") {
+				continue;
+			}else {
+				$info = $test->getAttribute('info');
+				if ($info == 'Accepted' || $info == 'Extra Test Passed')
+					continue;
+				$status = $test->getAttribute('info');
+				break;
+			}
+		}
+		$statuses = array(
+			"STATUS_CODE_0",
+			"FAIL_TO_SHOW_STATUS",//-1
+			"Accepted",
+			"Time Limit Exceeded",
+			"Acceptable Answer",
+			"Wrong Answer",//-5
+			"Runtime Error",
+			"Memory Limit Exceeded",
+			"Output Limit Exceeded",
+			"Dangerous Syscalls",
+			"Judgement Failed",//-10
+			"No Comment",
+		);
+		foreach ($statuses as $code => $name) {
+			if (stripos($status,$name)!==false)
+				return -$code;
+		}
+		return -12;
+	}
 	
 	
 	if (isset($_POST['fetch_new']) && !$_POST['fetch_new']) {

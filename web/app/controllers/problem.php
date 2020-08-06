@@ -89,7 +89,9 @@
 		$content['config'][] = array('problem_id', $problem['id']);
 		if ($is_in_contest && $contest['extra_config']["contest_type"]!='IOI' && !isset($contest['extra_config']["problem_{$problem['id']}"])) {
 			$content['final_test_config'] = $content['config'];
-			$content['config'][] = array('test_sample_only', 'on');
+			if ($contest['extra_config']["contest_type"]!='ACM') {
+				$content['config'][] = array('test_sample_only', 'on');
+			}
 		}
 		$esc_content = DB::escape(json_encode($content));
 
@@ -108,7 +110,7 @@
 		$result = array();
 		$result['status'] = "Waiting";
 		$result_json = json_encode($result);
-		
+
 		if ($is_in_contest) {
 			DB::query("insert into submissions (problem_id, contest_id, submit_time, submitter, content, language, tot_size, status, result, is_hidden) values (${problem['id']}, ${contest['id']}, now(), '${myUser['username']}', '$esc_content', '$esc_language', $tot_size, '${result['status']}', '$result_json', 0)");
 		} else {
