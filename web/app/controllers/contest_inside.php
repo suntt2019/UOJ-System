@@ -513,6 +513,9 @@ EOD;
 	<?php elseif ($contest['extra_config']['contest_type']=='IOI'):?>
 	<p>此次比赛为IOI赛制。</p>
 	<p><strong>注意：比赛时显示测试所有数据的结果，但无法看到详细信息。</strong></p>
+	<?php elseif ($contest['extra_config']['contest_type']=='ACM'):?>
+	<p>此次比赛为ACM赛制。</p>
+	<p><strong>注意：比赛时显示测试所有数据的结果，每个编译通过的非Accepted提交会罚时<?php echo $contest['extra_config']['time_penalty']?>分钟，比赛结束前<?php echo $contest['extra_config']['freeze_time']?>分钟封榜。</strong></p>
 	<?php endif?>
 	
 		<a href="/contest/<?=$contest['id']?>/registrants" class="btn btn-info btn-block"><?= UOJLocale::get('contests::contest registrants') ?></a>

@@ -182,9 +182,29 @@
 			},
 			null
 		);
+		$contest_type_form->addInput('time_penalty', 'text', '罚时（分钟）', $contest['extra_config']['time_penalty'],
+			function ($x) {
+				if (!validateUInt($x)||(int)$x<0) {
+					return '罚时应该为一个正整数';
+				}
+				return '';
+			},
+			null
+		);
+		$contest_type_form->addInput('freeze_time', 'text', '封榜时长（分钟）', $contest['extra_config']['freeze_time'],
+			function ($x) {
+				if (!validateUInt($x)||(int)$x<0) {
+					return '封榜时长应该为一个正整数';
+				}
+				return '';
+			},
+			null
+		);
 		$contest_type_form->handle = function() {
 			global $contest;
 			$contest['extra_config']['contest_type'] = $_POST['contest_type'];
+			$contest['extra_config']['time_penalty'] = $_POST['time_penalty'];
+			$contest['extra_config']['freeze_time'] = $_POST['freeze_time'];
 			$esc_extra_config = json_encode($contest['extra_config']);
 			$esc_extra_config = DB::escape($esc_extra_config);
 			DB::update("update contests set extra_config = '$esc_extra_config' where id = {$contest['id']}");
@@ -278,6 +298,26 @@
 				<h3>赛制</h3>
 				<?php $contest_type_form->printHTML(); ?>
 			</div>
+			<script>
+				input_contest_type=$('#input-contest_type');
+				update_ACM_option_visible(null);
+				input_contest_type.change(update_ACM_option_visible);
+				function update_ACM_option_visible(e){
+					if(input_contest_type.val()==='ACM') {
+						$('#div-time_penalty').show();
+						$('#div-freeze_time').show();
+						if(e!=null) {
+							$('#input-time_penalty').val("20");
+							$('#input-freeze_time').val("60");
+						}
+					}else {
+						$('#div-time_penalty').hide();
+						$('#div-freeze_time').hide();
+						$('#input-time_penalty').val("0");
+						$('#input-freeze_time').val("0");
+					}
+				}
+			</script>
 		</div>
 	</div>
 	<?php endif ?>
