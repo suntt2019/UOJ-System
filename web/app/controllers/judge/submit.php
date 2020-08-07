@@ -21,7 +21,9 @@
 		if (isset($content['first_test_config'])) {
 			$result = json_decode($submission['result'], true);
 			$result['final_result'] = json_decode($_POST['result'], true);
-			$result['final_result']['score'] = getACMSubmissionResult($result['final_result']);
+			if($contest['extra_config']['contest_type']=='ACM') {
+				$result['final_result']['score'] = getACMSubmissionResult($result['final_result']);
+			}
 			$result['final_result']['details'] = uojTextEncode($result['final_result']['details']);
 			$esc_result = DB::escape(json_encode($result, JSON_UNESCAPED_UNICODE));
 			
@@ -34,7 +36,7 @@
 		} else {
 			$result = json_decode($_POST['result'], true);
 			$result['details'] = uojTextEncode($result['details']);
-			if($contest['extra_config']['contest_type']=='ACM' && $contest['cur_progress'] == CONTEST_IN_PROGRESS) {
+			if($contest['extra_config']['contest_type']=='ACM') {
 				$result['score'] = getACMSubmissionResult($result);
 			}
 			$esc_result = DB::escape(json_encode($result, JSON_UNESCAPED_UNICODE));

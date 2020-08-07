@@ -160,7 +160,7 @@ function queryContestData($contest, $config = array()) {
 		}
 	} else {
 		if ($contest['cur_progress'] < CONTEST_FINISHED) {
-			$result = DB::query("select id, submit_time, submitter, problem_id, score from submissions"
+			$result = DB::query("select id, submit_time, submitter, problem_id, score, status from submissions"
 				." where contest_id = {$contest['id']} and score is not null order by id");
 		} else {
 			$result = DB::query("select submission_id, date_add('{$contest['start_time_str']}', interval penalty second),"
@@ -199,18 +199,42 @@ function calcStandings($contest, $contest_data, &$score, &$standings, $update_co
 				$penalty = 0;
 			}
 		}
-		$score[$submission[2]][$submission[3]] = array($submission[4], $penalty, $submission[0]);
-	}
+		if ($contest['extra_config']['contest_type']=='ACM') {
+			$score_item = $score[$submission[2]][$submission[3]];
+			if(!isset($submission[5])||$submission[5]=='Judged'){
+				$score_item[3]++;
+			} else {
+				$score_item[4]++;
+			}
+			DB::query("insert into log (message) value ('${submission[5]}')");
 
+			if ($submission[4]==-2) {
+				$submission[4] = 1;
+				if ($score_item[5] < $penalty)
+					$score_item[5] = $penalty;//find the last AC submission time
+			} else {
+				$submission[4] = 0;
+			}
+			$score_item[1] = $penalty + $score_item[3] * $contest['extra_config']['time_penalty'] * 60;// add penalty time for non-AC submissions
+			$score[$submission[2]][$submission[3]] = array($submission[4], $score_item[1], $submission[0],$score_item[3],$score_item[4], $score_item[5], $contest['last_min']);
+			                                               //score( 0 or 1)  time(last submission) user_id   judged_cnt    judging_cnt    last_ac_time     contest_last_time
+		} else {
+			$score[$submission[2]][$submission[3]] = array($submission[4], $penalty, $submission[0]);
+		}
+
+	}
 	// standings: rank => score, penalty, [username, user_rating], virtual_rank
 	$standings = array();
 	foreach ($contest_data['people'] as $person) {
-		$cur = array(0, 0, $person);
+		$cur = array(0, 0, $person, 0);
 		for ($i = 0; $i < $n_problems; $i++) {
 			if (isset($score[$person[0]][$i])) {
 				$cur_row = $score[$person[0]][$i];
-				$cur[0] += $cur_row[0];
-				$cur[1] += $cur_row[1];
+				$cur[0] += $cur_row[0];//score
+				if (!($contest['extra_config']['contest_type']=='ACM') || $cur_row[0]>0 )
+					$cur[1] += $cur_row[1];//total-penalty
+				if (isset($score_item[5])&&$cur_row[5] > $cur[3])
+					$cur[3] = $cur_row[5];//latest-submit
 				if ($update_contests_submissions) {
 					DB::insert("insert into contests_submissions (contest_id, submitter, problem_id, submission_id, score, penalty) values ({$contest['id']}, '{$person[0]}', {$contest_data['problems'][$i]}, {$cur_row[2]}, {$cur_row[0]}, {$cur_row[1]})");
 				}
@@ -220,17 +244,19 @@ function calcStandings($contest, $contest_data, &$score, &$standings, $update_co
 	}
 
 	usort($standings, function($lhs, $rhs) {
-		if ($lhs[0] != $rhs[0]) {
+		if ($lhs[0] != $rhs[0]) {//compare score
 			return $rhs[0] - $lhs[0];
-		} elseif ($lhs[1] != $rhs[1]) {
+		} elseif ($lhs[1] != $rhs[1]) {//compare total cnt
 			return $lhs[1] - $rhs[1];
-		} else {
+		} elseif ($lhs[3] != $rhs[3]) {//compare last ac time
+			return $lhs[3] - $rhs[3];
+		}else {
 			return strcmp($lhs[2][0], $rhs[2][0]);
 		}
 	});
 
 	$is_same_rank = function($lhs, $rhs) {
-		return $lhs[0] == $rhs[0] && $lhs[1] == $rhs[1];
+		return $lhs[0] == $rhs[0] && $lhs[1] == $rhs[1] && $lhs[3] == $rhs[3];
 	};
 
 	for ($i = 0; $i < $n_people; $i++) {
@@ -238,6 +264,11 @@ function calcStandings($contest, $contest_data, &$score, &$standings, $update_co
 			$standings[$i][] = $i + 1;
 		} else {
 			$standings[$i][] = $standings[$i - 1][3];
+		}
+	}
+	if ($contest['extra_config']['contest_type']=='ACM') {
+		for ($i = 0; $i < $n_people; $i++) {
+			$standings[$i][5] = "ACM";
 		}
 	}
 }

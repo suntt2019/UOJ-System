@@ -121,15 +121,7 @@ function getColOfRating(rating) {
 	return ColorConverter.toStr(ColorConverter.toRGB(new HSV(300 - (rating - 850) * 300 / 1650, 30 + (rating - 850) * 70 / 1650, 50 + (rating - 850) * 50 / 1650)));
 }
 function getColOfScore(score) {
-	if (score == -2) {
-		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 80)));//card-uoj-accepted
-	} else if (score == -3) {
-		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(60, 100, 80)));//card-uoj-tle
-	} else if (score == -4) {
-		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(28, 100, 80)));//card-uoj-acceptable-answer
-	} else if (score <= -5 && score >= -11) {
-		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(0, 100, 80)));//card-uoj-wrong
-	} else if (score < -11) {
+	if (score < 0) {
 		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(300, 100, 80)));
 	} else if (score == 0) {
 		return ColorConverter.toStr(ColorConverter.toRGB(new HSV(0, 100, 80)));
@@ -440,8 +432,20 @@ $.fn.uoj_highlight = function() {
 				return;
 			}
 			if (score<0) {
-				$(this).text(getScoreString(score))
-				$(this).css("color", getColOfScore(score));
+				$(this).text(getScoreString(score));
+				let color;
+				if (score === -2) {
+					color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 80)));//card-uoj-accepted
+				} else if (score === -3) {
+					color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(60, 100, 80)));//card-uoj-tle
+				} else if (score === -4) {
+					color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(28, 100, 80)));//card-uoj-acceptable-answer
+				} else if (score <= -5 && score >= -11) {
+					color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(0, 100, 80)));//card-uoj-wrong
+				} else if (score < -11) {
+					color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(300, 100, 80)));
+				}
+				$(this).css("color", color);
 			} else if (isNaN(maxscore)) {
 				$(this).css("color", getColOfScore(score));
 			} else {
@@ -1135,21 +1139,53 @@ function showStandings() {
 			var col_tr = '<tr>';
 			col_tr += '<td>' + row[3] + '</td>';
 			col_tr += '<td>' + getUserLink(row[2][0], row[2][1]) + '</td>';
-			col_tr += '<td>' + '<div><span class="uoj-score" data-max="' + problems.length * 100 + '" style="color:' + getColOfScore(row[0] / problems.length) + '">' + row[0] + '</span></div>' + '<div>' + getPenaltyTimeStr(row[1]) + '</div></td>';
-			for (var i = 0; i < problems.length; i++) {
-				col_tr += '<td>';
-				col = score[row[2][0]][i];
-				if (col != undefined) {
-					col_tr += '<div><a href="/submission/' + col[2] + '" class="uoj-score" style="color:' + getColOfScore(col[0]) + '">' + getScoreString(col[0]) + '</a></div>';
-					if (standings_version < 2) {
-						col_tr += '<div>' + getPenaltyTimeStr(col[1]) + '</div>';
-					} else {
-						if (col[0] > 0) {
+			if (row[5]==="ACM") {
+				col_tr += '<td>' + '<div><span style="font-weight: 700">' + row[0] + '</span>&nbsp&nbsp&nbsp&nbsp<span>' + Math.floor(row[1]/60) + '</span></div></td>';
+				for (let i = 0; i < problems.length; i++) {
+					col_tr += '<td>';
+					col = score[row[2][0]][i];
+					if (col != undefined) {
+						col_tr += '<div><a href="/submission/' + col[2] + '" style="color:' + getColOfScore((1-col[1]/60/col[6])*100) + ';font-weight: 700;">' + Math.floor(col[1]/60) + '</a></div>';
+						let judgedString, pendingString,color;
+						if (col[3]==null) {
+							judgedString = "0";
+						} else {
+							judgedString = col[3];
+							if (col[0] === 1)
+								color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 80)));
+							else
+								color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(0, 100, 80)));
+						}
+						if (col[4]==null) {
+							pendingString = "";
+						} else {
+							pendingString = " + " + col[4];
+							color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(200, 100, 80)));
+						}
+						if (col[3] + col[4] === 1)
+							col_tr += '<div style="color:'+ color + '">' + judgedString + pendingString + ' try</div>';
+						else if (col[3] + col[4] > 1)
+							col_tr += '<div style="color:'+ color + '">' + judgedString + pendingString + ' tries</div>';
+					}
+					col_tr += '</td>';
+				}
+			} else {
+				col_tr += '<td>' + '<div><span class="uoj-score" data-max="' + problems.length * 100 + '" style="color:' + getColOfScore(row[0] / problems.length) + '">' + row[0] + '</span></div>' + '<div>' + getPenaltyTimeStr(row[1]) + '</div></td>';
+				for (var i = 0; i < problems.length; i++) {
+					col_tr += '<td>';
+					col = score[row[2][0]][i];
+					if (col != undefined) {
+						col_tr += '<div><a href="/submission/' + col[2] + '" class="uoj-score" style="color:' + getColOfScore(col[0]) + '">' + col[0] + '</a></div>';
+						if (standings_version < 2) {
 							col_tr += '<div>' + getPenaltyTimeStr(col[1]) + '</div>';
+						} else {
+							if (col[0] > 0) {
+								col_tr += '<div>' + getPenaltyTimeStr(col[1]) + '</div>';
+							}
 						}
 					}
+					col_tr += '</td>';
 				}
-				col_tr += '</td>';
 			}
 			col_tr += '</tr>';
 			return col_tr;
