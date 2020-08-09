@@ -1145,7 +1145,6 @@ function showStandings() {
 					col_tr += '<td>';
 					col = score[row[2][0]][i];
 					if (col != undefined) {
-						col_tr += '<div><a href="/submission/' + col[2] + '" style="color:' + getColOfScore((1-col[1]/60/col[6])*100) + ';font-weight: 700;">' + Math.floor(col[1]/60) + '</a></div>';
 						let judgedString, pendingString,color;
 						if (col[3]==null) {
 							judgedString = "0";
@@ -1162,10 +1161,11 @@ function showStandings() {
 							pendingString = " + " + col[4];
 							color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(200, 100, 80)));
 						}
+						col_tr += '<div><a href="/submission/' + col[2] + '" style="color:' + color + ';font-weight: 700;">' + Math.floor(col[1]/60) + '</a></div>';
 						if (col[3] + col[4] === 1)
-							col_tr += '<div style="color:'+ color + '">' + judgedString + pendingString + ' try</div>';
+							col_tr += '<div>' + judgedString + pendingString + ' try</div>';
 						else if (col[3] + col[4] > 1)
-							col_tr += '<div style="color:'+ color + '">' + judgedString + pendingString + ' tries</div>';
+							col_tr += '<div>' + judgedString + pendingString + ' tries</div>';
 					}
 					col_tr += '</td>';
 				}

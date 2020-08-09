@@ -195,18 +195,17 @@ function calcStandings($contest, $contest_data, &$score, &$standings, $update_co
 	foreach ($contest_data['data'] as $submission) {
 		$penalty = (new DateTime($submission[1]))->getTimestamp() - $contest['start_time']->getTimestamp();
 		if ($contest['extra_config']['standings_version'] >= 2) {
-			if ($submission[4] == 0) {
+			if (!($contest['extra_config']['contest_type']=='ACM') && $submission[4] == 0) {
 				$penalty = 0;
 			}
 		}
 		if ($contest['extra_config']['contest_type']=='ACM') {
 			$score_item = $score[$submission[2]][$submission[3]];
-			if(!isset($submission[5])||$submission[5]=='Judged'){
+			if(!isset($submission[5])||($submission[5]=='Judged'&& $penalty/60 < $contest['last_min'] - $contest['extra_config']['freeze_time'])){
 				$score_item[3]++;
 			} else {
 				$score_item[4]++;
 			}
-			DB::query("insert into log (message) value ('${submission[5]}')");
 
 			if ($submission[4]==-2) {
 				$submission[4] = 1;
