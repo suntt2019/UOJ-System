@@ -368,9 +368,13 @@ EOD;
 
 		$show_all_submissions_status = Cookie::get('show_all_submissions') !== null ? 'checked="checked" ' : '';
 		$show_all_submissions = UOJLocale::get('contests::show all submissions');
-		echo <<<EOD
-			<div class="checkbox text-right">
+		$show_all_submissions_forbidden = isset($contest['extra_config']['contest_type']) && $contest['extra_config']['contest_type']=='ACM' && $contest['cur_progress'] == CONTEST_IN_PROGRESS && !hasContestPermission($myUser, $contest);
+		echo '<div class="checkbox text-right">';
+		if (!$show_all_submissions_forbidden)
+			echo <<<EOD
 				<label for="input-show_all_submissions"><input type="checkbox" id="input-show_all_submissions" $show_all_submissions_status/> $show_all_submissions</label>
+EOD;
+		echo <<<EOD
 			</div>
 			<script type="text/javascript">
 				$('#input-show_all_submissions').click(function() {
@@ -383,7 +387,7 @@ EOD;
 				});
 			</script>
 EOD;
-		if (Cookie::get('show_all_submissions') !== null) {
+		if (Cookie::get('show_all_submissions') !== null && !$show_all_submissions_forbidden) {
 			echoSubmissionsList("contest_id = {$contest['id']}", 'order by id desc', array('judge_time_hidden' => ''), $myUser);
 		} else {
 			echoSubmissionsList("submitter = '{$myUser['username']}' and contest_id = {$contest['id']}", 'order by id desc', array('judge_time_hidden' => ''), $myUser);
