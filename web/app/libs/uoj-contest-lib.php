@@ -146,7 +146,7 @@ function queryContestData($contest, $config = array()) {
 
 	$data = [];
 	if ($config['pre_final']) {
-		$result = DB::query("select id, submit_time, submitter, problem_id, result from submissions"
+		$result = DB::query("select id, submit_time, submitter, problem_id, result, status, is_balloon from submissions"
 				." where contest_id = {$contest['id']} and score is not null order by id");
 		while ($row = DB::fetch($result, MYSQLI_NUM)) {
 			$r = json_decode($row[4], true);
@@ -156,11 +156,12 @@ function queryContestData($contest, $config = array()) {
 			$row[0] = (int)$row[0];
 			$row[3] = $prob_pos[$row[3]];
 			$row[4] = (int)($r['final_result']['score']);
+			$row[5] = "Final";
 			$data[] = $row;
 		}
 	} else {
 		if ($contest['cur_progress'] < CONTEST_FINISHED) {
-			$result = DB::query("select id, submit_time, submitter, problem_id, score, status from submissions"
+			$result = DB::query("select id, submit_time, submitter, problem_id, score, status, is_balloon from submissions"
 				." where contest_id = {$contest['id']} and score is not null order by id");
 		} else {
 			$result = DB::query("select submission_id, date_add('{$contest['start_time_str']}', interval penalty second),"
@@ -201,8 +202,10 @@ function calcStandings($contest, $contest_data, &$score, &$standings, $update_co
 		}
 		if ($contest['extra_config']['contest_type']=='ACM') {
 			$score_item = $score[$submission[2]][$submission[3]];
-			if(!isset($submission[5])||($submission[5]=='Judged'&& $penalty/60 < $contest['last_min'] - $contest['extra_config']['freeze_time'])){
+			if($submission[5]=='Final'||($submission[5]=='Judged'&& $penalty/60 < $contest['last_min'] - $contest['extra_config']['freeze_time'])){
 				$score_item[3]++;
+				if ($submission[6])
+					$score_item[6] = true;
 			} else {
 				$score_item[4]++;
 			}
@@ -215,8 +218,8 @@ function calcStandings($contest, $contest_data, &$score, &$standings, $update_co
 				$submission[4] = 0;
 			}
 			$score_item[1] = $penalty + $score_item[3] * $contest['extra_config']['time_penalty'] * 60;// add penalty time for non-AC submissions
-			$score[$submission[2]][$submission[3]] = array($submission[4], $score_item[1], $submission[0],$score_item[3],$score_item[4], $score_item[5], $contest['last_min']);
-			                                               //score( 0 or 1)  time(last submission) user_id   judged_cnt    judging_cnt    last_ac_time     contest_last_time
+			$score[$submission[2]][$submission[3]] = array($submission[4], $score_item[1], $submission[0],$score_item[3],$score_item[4], $score_item[5], $score_item[6]);
+			                                               //score( 0 or 1)  time(last submission) user_id   judged_cnt    judging_cnt    last_ac_time   is_balloon
 		} else {
 			$score[$submission[2]][$submission[3]] = array($submission[4], $penalty, $submission[0]);
 		}

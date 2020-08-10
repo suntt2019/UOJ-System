@@ -7,7 +7,7 @@
 	}
 	
 	function submissionJudged() {
-		$submission = DB::selectFirst("select submitter, status, content, result, problem_id, contest_id from submissions where id = {$_POST['id']}");
+		$submission = DB::selectFirst("select submitter, status, content, result, problem_id, contest_id, submit_time, is_balloon from submissions where id = {$_POST['id']}");
 		if ($submission == null) {
 			return;
 		}
@@ -57,6 +57,8 @@
 		}
 		DB::update("update submissions set status_details = '' where id = {$_POST['id']}");
 		updateBestACSubmissions($submission['submitter'], $submission['problem_id']);
+		if($contest['extra_config']['contest_type']=='ACM')
+			updateIsBalloon($submission);
 	}
 
 	function customTestSubmissionJudged() {
@@ -237,7 +239,15 @@
 		}
 		return -12;
 	}
-	
+	function updateIsBalloon($submission) {
+		$maybe_balloon_submission = DB::selectFirst("select id, submit_time, is_balloon from submissions where contest_id = '${submission['contest_id']}' and problem_id = '${submission['problem_id']}' and score = '-2' order by submit_time");
+		$earlier_submissions = DB::selectAll("select id from submissions where contest_id = '${submission['contest_id']}' and problem_id = '${submission['problem_id']}' and submit_time < '${maybe_balloon_submission['submit_time']}' and status != 'Judged'");
+		$is_balloon = sizeof($earlier_submissions) == 0;
+		if ($is_balloon && !$maybe_balloon_submission['is_balloon'])
+			;//execute the hook here
+		DB::update("update submissions set is_balloon = 0 where contest_id = '${submission['contest_id']}' and problem_id = '${submission['problem_id']}'");
+		DB::update("update submissions set is_balloon = '$is_balloon' where id = '${maybe_balloon_submission['id']}'");
+	}
 	
 	if (isset($_POST['fetch_new']) && !$_POST['fetch_new']) {
 		die("Nothing to judge");

@@ -596,6 +596,7 @@ CREATE TABLE `submissions` (
   `used_memory` int(11) NOT NULL DEFAULT '0',
   `is_hidden` tinyint(1) NOT NULL,
   `status_details` varchar(100) NOT NULL,
+  `is_balloon` tinyint(1) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `is_hidden` (`is_hidden`,`problem_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;

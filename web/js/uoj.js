@@ -1150,8 +1150,12 @@ function showStandings() {
 							judgedString = "0";
 						} else {
 							judgedString = col[3];
-							if (col[0] === 1)
-								color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 80)));
+							if (col[0] === 1) {
+								if (col[6])
+									color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 60)));
+								else
+									color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(120, 100, 80)));
+							}
 							else
 								color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(0, 100, 80)));
 						}
@@ -1162,10 +1166,14 @@ function showStandings() {
 							color = ColorConverter.toStr(ColorConverter.toRGB(new HSV(200, 100, 80)));
 						}
 						col_tr += '<div><a href="/submission/' + col[2] + '" style="color:' + color + ';font-weight: 700;">' + Math.floor(col[1]/60) + '</a></div>';
+						col_tr += '<div>';
+						if (col[6]) {
+							col_tr += '\uD83C\uDF88'
+						}
 						if (col[3] + col[4] === 1)
-							col_tr += '<div>' + judgedString + pendingString + ' try</div>';
+							col_tr += judgedString + pendingString + ' try</div>';
 						else if (col[3] + col[4] > 1)
-							col_tr += '<div>' + judgedString + pendingString + ' tries</div>';
+							col_tr += judgedString + pendingString + ' tries</div>';
 					}
 					col_tr += '</td>';
 				}
