@@ -20,11 +20,13 @@
 	requirePHPLib('security');
 	requirePHPLib('contest');
 	requirePHPLib('html');
-	
+	requirePHPLib('hook');
+
 	Session::init();
 	UOJTime::init();
 	DB::init();
 	Auth::init();
+	Hook::init();
 	
 	if (isset($_GET['locale'])) {
 		UOJLocale::setLocale($_GET['locale']);

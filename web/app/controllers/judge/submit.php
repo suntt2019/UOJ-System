@@ -244,7 +244,7 @@
 		$earlier_submissions = DB::selectAll("select id from submissions where contest_id = '${submission['contest_id']}' and problem_id = '${submission['problem_id']}' and submit_time < '${maybe_balloon_submission['submit_time']}' and status != 'Judged'");
 		$is_balloon = sizeof($earlier_submissions) == 0;
 		if ($is_balloon && !$maybe_balloon_submission['is_balloon'])
-			;//execute the hook here
+			Hook::run("balloon",null);
 		DB::update("update submissions set is_balloon = 0 where contest_id = '${submission['contest_id']}' and problem_id = '${submission['problem_id']}'");
 		DB::update("update submissions set is_balloon = '$is_balloon' where id = '${maybe_balloon_submission['id']}'");
 	}
